@@ -200,6 +200,7 @@ class Utilities {
 
 		$emails_array = explode( "\n", $text );
 		$emails_array = array_map( 'trim', $emails_array );
+		$emails_array = array_filter( $emails_array ); // Remove empty lines.
 
 		return $emails_array;
 	}
@@ -767,6 +768,13 @@ class Utilities {
 	 * @return boolean|array False if geolocation is unavailable or array of location information.
 	 */
 	public static function geolocation( $ip ) {
+		// Check for cached geolocation data (1 week cache).
+		$cache_key = 'zerospam_geo_' . md5( $ip );
+		$cached    = get_transient( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
 		// The standardized location array that will be returned.
 		$location_details = array(
 			'type'           => false,
@@ -896,6 +904,10 @@ class Utilities {
 				$location_details['longitude'] = $ipinfo_location['longitude'];
 			}
 		}
+
+		
+		// Cache the result.
+		set_transient( $cache_key, $location_details, WEEK_IN_SECONDS );
 
 		return $location_details;
 	}

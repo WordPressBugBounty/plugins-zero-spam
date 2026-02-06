@@ -168,13 +168,6 @@ class WPForms {
 		// Only add scripts to the appropriate pages.
 		if ( 'enabled' === \ZeroSpam\Core\Settings::get_settings( 'davidwalsh' ) ) {
 			wp_enqueue_script( 'zerospam-davidwalsh' );
-
-			add_action(
-				'wp_enqueue_scripts',
-				function () {
-					wp_add_inline_script( 'zerospam-davidwalsh', 'document.addEventListener("DOMContentLoaded", function() { jQuery(".wpforms-form").ZeroSpamDavidWalsh(); });' );
-				}
-			);
 		}
 	}
 
@@ -203,7 +196,7 @@ class WPForms {
 
 		$settings['verify_wpforms'] = array(
 			'title'       => __( 'Protect WPForms Submissions', 'zero-spam' ),
-			'desc'        => __( 'Protects & monitors WPForms submissions.', 'zero-spam' ),
+			'desc'        => __( 'Stop spam from WPForms.', 'zero-spam' ),
 			'section'     => 'wpforms',
 			'module'      => 'wpforms',
 			'type'        => 'checkbox',
@@ -218,7 +211,7 @@ class WPForms {
 
 		$settings['wpforms_spam_message'] = array(
 			'title'       => __( 'Flagged Message', 'zero-spam' ),
-			'desc'        => __( 'Message displayed when a submission has been flagged.', 'zero-spam' ),
+			'desc'        => __( 'The message shown when WPForms detects spam.', 'zero-spam' ),
 			'section'     => 'wpforms',
 			'module'      => 'wpforms',
 			'type'        => 'text',
@@ -233,10 +226,7 @@ class WPForms {
 			'section'     => 'wpforms',
 			'module'      => 'wpforms',
 			'type'        => 'checkbox',
-			'desc'        => wp_kses(
-				__( 'When enabled, stores blocked WPForms submissions in the database.', 'zero-spam' ),
-				array( 'strong' => array() )
-			),
+			'desc'        => __( 'Keep a record of blocked WPForms submissions.', 'zero-spam' ),
 			'options'     => array(
 				'enabled' => false,
 			),

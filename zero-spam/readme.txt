@@ -2,12 +2,12 @@
 Contributors: bmarshall511
 Tags: protection, firewall, security, spam, spam blocker
 Donate link: https://www.zerospam.org/subscribe/
-Requires at least: 5.2
-Tested up to: 6.5.2
-Requires PHP: 7.4
-Stable tag: 5.5.7
-License: GNU GPLv3
-License URI: https://choosealicense.com/licenses/gpl-3.0/
+Requires at least: 6.9
+Tested up to: 6.9
+Requires PHP: 8.2
+Stable tag: 5.7.2
+License: GPL v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
 No spam, no scams, just seamless experiences with Zero Spam for WordPress - the shield your site deserves.
 
@@ -25,6 +25,7 @@ Rest easy knowing that we utilize multiple detection methods to swiftly identify
 * Block IPs temporarily or permanently, keep unwanted visitors out.
 * Geolocation tracks origins of threats, providing valuable insights.
 * Ability to block countries, regions, zip/postal codes & cities.
+* REST API for programmatic settings management — perfect for CI/CD, staging syncs, and automation.
 * Utilize [splorp's Comment Blacklist](https://github.com/splorp/wordpress-comment-blacklist) to strengthen your disallowed list.
 * Block disposable & malicious email effortlessly with [disposable](https://github.com/disposable).
 * Multiple techniques, including the renowned solution by [David Walsh](https://davidwalsh.name/wordpress-comment-spam).
@@ -85,6 +86,20 @@ To further optimize performance, you can adjust the cache and API timeout settin
 * `wp zerospam settings` &mdash; Displays all plugin settings.
 * `wp zerospam set --[SETTING_KEY]=[VALUE]` &mdash; Updates a plugin setting.
 
+= Can I manage Zero Spam settings programmatically? =
+
+**Yes!** Zero Spam provides a secure REST API for reading and updating settings remotely. This is perfect for:
+
+* Syncing settings between staging and production environments
+* Automating configuration in CI/CD pipelines
+* Managing settings across multiple WordPress sites
+* Remote administration and monitoring
+* Testing configuration changes safely with dry-run mode
+
+The API supports multisite installations with granular control over network defaults and per-site overrides. Authentication uses WordPress Application Passwords for secure, revocable access without exposing your main password.
+
+**Getting Started:** Visit the Documentation tab in Settings > Zero Spam for complete details, step-by-step setup instructions, real-world examples, and troubleshooting tips. No technical expertise required!
+
 = Are you getting a `ftp_fget` PHP warning? =
 
 Some hosts have issues with they way they access files. If you're seeing a `ftp_fget` PHP notice, setting the `FS_METHOD` constant to `direct` in `wp-config.php` above the line `/* That's all, stop editing! Happy Pressing. */` should solve the problem:
@@ -97,6 +112,16 @@ If hosting with Pantheon, see their [known issues page](https://pantheon.io/docs
 
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team help validate, triage and handle any security vulnerabilities. [Report a security vulnerability.](https://patchstack.com/database/vdp/zero-spam)
 
+= I blocked myself! How do I get back in? =
+
+If you have defined the `ZEROSPAM_RESCUE_KEY` constant in your `wp-config.php` file, you can bypass all checks by appending `?zerospam_rescue={YOUR_KEY}` to any URL. (e.g., `https://example.com/wp-admin/?zerospam_rescue=mysecretkey`).
+
+If you haven't defined this key, you must manually rename the plugin folder via FTP (`wp-content/plugins/zero-spam` -> `zero-spam-disabled`) to gain access.
+
+= Why can't I access `wp-login.php` or XML-RPC anymore? =
+
+As of version 5.7.1, Zero Spam now actively protects `wp-login.php` and `xmlrpc.php` from blocked IPs. If you are blocked, check your IP reputation or use the Rescue Mode key to log in and whitelist your IP.
+
 == Screenshots ==
 
 1. Dashboard
@@ -106,6 +131,122 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 5. Add blocked location
 
 == Changelog ==
+
+= v5.7.2 =
+
+* fix(ipinfo): migrated to Lite API (unlimited free tier) to resolve 429 quota exceeded errors
+* perf(ipinfo): added persistent transient caching to reduce API calls
+* refactor(ipinfo): removed ipinfo/ipinfo vendor dependency in favor of native WordPress HTTP API
+* feat(multisite): added Notifications tab to Network Settings with toggle for weekly summary emails
+* feat(multisite): network administrators can now enable/disable weekly email notifications from the UI
+
+= v5.7.1 =
+
+* fix(settings): resolved undefined array key warnings for rescue mode setting
+
+= v5.7.0 =
+
+* feat(safety): implemented rescue mode (ZEROSPAM_RESCUE_KEY) to bypass blocks (emergency access)
+* feat(security): extended protection to wp-login.php and xmlrpc.php endpoints
+* fix(login): implemented intent token mechanism to prevent false positives with multi-step login flows (e.g. 2FA, Math Captcha)
+* fix(login): refined error messaging for missing verification fields to avoid incorrect "malicious" labeling
+* feat(performance): implemented transient caching for geolocation lookups (1 week) to reduce API calls
+* feat(logging): added granular failure reasons to detection logs (e.g. "High Confidence Score: 95%")
+* fast(core): removed incorrect main query check that could bypass blocks
+* feat(multisite): comprehensive network-wide settings management for agencies managing multiple sites
+* feat(multisite): network admin dashboard with overview statistics, site comparison, and application status
+* feat(multisite): settings hierarchy system - network defaults with site-level override capability and lock enforcement
+* feat(multisite): settings templates system for quick configuration deployment across sites
+* feat(multisite): audit trail tracking all network setting changes with user attribution
+* feat(multisite): import/export functionality for network settings backup and migration
+* feat(multisite): WP-CLI commands for programmatic network settings management
+* feat(multisite): REST API endpoints for remote network configuration
+* feat(dashboard): unified dashboard widget that intelligently adapts to multisite/single-site context
+* feat(dashboard): modern, responsive design using WordPress core components with dark mode support
+* feat(dashboard): real-time API usage monitoring with visual progress bars and warning levels
+* feat(dashboard): 30-day spam trend visualization using Chart.js 4.x
+* feat(dashboard): top 10 sites by spam volume (network admin) and spam types breakdown (single site)
+* fix(dashboard): improved permission handling for multisite super admins
+* fix(dashboard): added proper hooks for both network and regular admin dashboards
+* fix(comparison): corrected override count calculation to show actual differences, not just stored values
+* fix(comparison): resolved undefined value errors and improved data validation
+* fix(comparison): auto-load comparison data when viewing tab for better UX
+* fix(import-export): added 3-second delay before page reload so success messages are visible
+* fix(import-export): enhanced validation with file type checking, size limits, and JSON parsing
+* fix(import-export): improved error messages and inline status feedback
+* fix(ui): polished settings interface with better grouping, descriptions, and visual hierarchy
+* fix(ui): inline save feedback that doesn't scroll users away from their work
+* fix(ui): simplified setting descriptions to be non-technical and user-friendly
+* fix(php8.1): resolved deprecation warnings for number_format() with null values
+
+= v5.6.2 =
+
+* fix(admin): resolved issue where "Advanced Protection is enabled but not licensed" notice displayed incorrectly when Enhanced Protection was disabled
+* fix(admin): corrected Settings API usage in admin notices for consistency with dashboard widget
+* fix(admin): added support for ZEROSPAM_LICENSE_KEY constant check in admin notice logic
+* fix(debug): removed testing debug statements
+
+= v5.6.1 =
+
+* fix(api): corrected email report submission to use GET method with query parameters (was incorrectly using POST with body)
+* fix(api): email reports now properly include report_ip parameter
+* fix(api): fixed variable reuse bug by using separate $email_endpoint variable for email reports
+
+= v5.6.0 =
+
+* feat(api): API version increment - v2/query to v3/query, v5.4/report to v6/report, v1/get-license to v2/get-license
+* feat(api): migrated all protected endpoints from POST to GET method with query parameters
+* feat(api): master API key can bypass localhost blocking for testing purposes
+* feat(david walsh): rewritten in vanilla JavaScript, removing jQuery dependency
+* feat(david walsh): added MutationObserver for dynamically loaded forms (AJAX, React)
+* feat(david walsh): implemented daily key rotation with dual-key caching for cached pages
+* feat(david walsh): increased key length from 5 to 16 characters for enhanced security
+* feat(david walsh): added REST API endpoint for AJAX-based key refresh
+* feat(gravity forms): added David Walsh technique support
+* feat(formidable): added David Walsh technique support
+* feat(elementor): added David Walsh technique support
+* feat(woocommerce): added David Walsh validation for checkout (in addition to registration)
+* feat(admin): added conversion-optimized promotional notice for Enhanced Protection with lifetime discount offer
+* refactor(givewp): removed David Walsh support (incompatible with v3 block-based forms)
+* refactor(david walsh): centralized form selector management via filter
+* fix(david walsh): removed dead MemberPress selectors from JavaScript
+* perf(api): Apache-level validation requires license_key parameter (zero PHP overhead for invalid requests)
+* perf(api): v3/query requires ip or email parameter at Apache level
+* fix(api): corrected hardcoded api url to use ZEROSPAM_URL constant in query function
+* fix(api): wrapped report data in 'data' array for proper API format
+* fix(code): corrected remote_request return type docblock
+* fix(code): corrected Object→WP_REST_Request param types and increment_license_queries parameter
+* ui(david walsh): redesigned settings page with comprehensive how-it-works documentation
+* ui(david walsh): added security key status display with rotation countdown
+* ui(david walsh): added step-by-step testing instructions for non-technical users
+* ui(david walsh): enhanced custom form selectors field with detailed usage examples
+* ui(david walsh): added list of currently protected form selectors
+* ui(admin): promotional notice displays on dashboard and Zero Spam pages for unlicensed users
+* ui(admin): notice is dismissible and reappears after 30 days if no license is added
+* ui(admin): notice waits 3 days after plugin activation before displaying
+
+
+
+= v5.5.9 =
+
+* fix(api): corrected app_type case mismatch and app_details/email_details encoding
+
+= v5.5.8 =
+
+* fix(caching): prevented caching of 403 forbidden pages to resolve compatibility with litespeed cache (closes #383)
+* fix(david walsh): improved js reliability for comment forms to prevent false positives (closes #378)
+* fix(david walsh): resolved conflict where wpforms submissions were blocked when david walsh protection was enabled (closes #364)
+* fix(ipinfo): corrected issue where location data was reported as "unknown" in the dashboard widget (closes #360)
+* fix(install): resolved database errors on fresh installations due to strict dbdelta requirements (closes #332)
+* chore(requirements): updated php and wp version requirements
+* chore(standards): fixed issues with strict types
+* docs(project): updated project documentation files
+* ci(github): updated github workflows and templates
+* perf(core): optimized disallowed words option to prevent autoloading large data
+* perf(api): implemented async detection reporting to reduce server load
+* perf(api): implemented persistent response caching (transients)
+* perf(api): implemented circuit breaker pattern for api fault tolerance
+* perf(core): optimized disposable email domains storage to prevent autoloading large data
 
 = v5.5.7 =
 

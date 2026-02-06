@@ -50,7 +50,9 @@ class ContactForm7 {
 	}
 
 	/**
-	 * Load the scripts
+	 * Load the scripts.
+	 *
+	 * Uses centralized David Walsh script - selectors are managed in class-davidwalsh.php.
 	 */
 	public function add_scripts() {
 		if (
@@ -58,13 +60,6 @@ class ContactForm7 {
 			'enabled' === \ZeroSpam\Core\Settings::get_settings( 'davidwalsh' )
 		) {
 			wp_enqueue_script( 'zerospam-davidwalsh' );
-			add_action(
-				'wp_footer',
-				function () {
-					echo '<script type="text/javascript">jQuery(".wpcf7-form").ZeroSpamDavidWalsh();</script>';
-				},
-				999
-			);
 		}
 	}
 
@@ -179,7 +174,7 @@ class ContactForm7 {
 
 		$settings['verify_contactform7'] = array(
 			'title'       => __( 'Protect CF7 Submissions', 'zero-spam' ),
-			'desc'        => __( 'Protects & monitors Contact Form 7 submissions.', 'zero-spam' ),
+			'desc'        => __( 'Stop spam from Contact Form 7 forms.', 'zero-spam' ),
 			'module'      => 'contactform7',
 			'section'     => 'contactform7',
 			'type'        => 'checkbox',
@@ -194,7 +189,7 @@ class ContactForm7 {
 
 		$settings['contactform7_spam_message'] = array(
 			'title'       => __( 'Flagged Message', 'zero-spam' ),
-			'desc'        => __( 'Message displayed when a submission has been flagged.', 'zero-spam' ),
+			'desc'        => __( 'The message shown when Contact Form 7 detects spam.', 'zero-spam' ),
 			'module'      => 'contactform7',
 			'section'     => 'contactform7',
 			'type'        => 'text',
@@ -209,10 +204,7 @@ class ContactForm7 {
 			'module'      => 'contactform7',
 			'section'     => 'contactform7',
 			'type'        => 'checkbox',
-			'desc'        => wp_kses(
-				__( 'When enabled, stores blocked Contact Form 7 submissions in the database.', 'zero-spam' ),
-				array( 'strong' => array() )
-			),
+			'desc'        => __( 'Keep a record of blocked Contact Form 7 submissions.', 'zero-spam' ),
 			'options'     => array(
 				'enabled' => false,
 			),

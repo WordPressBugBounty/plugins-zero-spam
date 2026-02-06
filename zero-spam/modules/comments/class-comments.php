@@ -72,16 +72,10 @@ class Comments {
 			'enabled' === \ZeroSpam\Core\Settings::get_settings( 'davidwalsh' )
 		) {
 			wp_enqueue_script( 'zerospam-davidwalsh' );
-			add_action(
-				'wp_footer',
-				function (): void {
-					// .wpd_comm_form for the wpDiscuz plugin
-					echo '<script type="text/javascript">document.addEventListener("DOMContentLoaded", function() { jQuery(".comment-form, #commentform, .wpd_comm_form").ZeroSpamDavidWalsh(); });</script>';
-				},
-				999
-			);
 		}
 	}
+
+
 
 	/**
 	 * Preprocess comments
@@ -220,7 +214,7 @@ class Comments {
 
 		$settings['verify_comments'] = array(
 			'title'       => __( 'Protect Comments', 'zero-spam' ),
-			'desc'        => __( 'Protects & monitors comment submissions.', 'zero-spam' ),
+			'desc'        => __( 'Stop spam comments on your blog posts.', 'zero-spam' ),
 			'section'     => 'comments',
 			'module'      => 'comments',
 			'type'        => 'checkbox',
@@ -235,7 +229,7 @@ class Comments {
 
 		$settings['comment_spam_message'] = array(
 			'title'       => __( 'Flagged Message', 'zero-spam' ),
-			'desc'        => __( 'Message displayed when a submission has been flagged.', 'zero-spam' ),
+			'desc'        => __( 'The message shown to people trying to post spam comments.', 'zero-spam' ),
 			'section'     => 'comments',
 			'module'      => 'comments',
 			'type'        => 'text',
@@ -250,10 +244,7 @@ class Comments {
 			'section'     => 'comments',
 			'module'      => 'comments',
 			'type'        => 'checkbox',
-			'desc'        => wp_kses(
-				__( 'When enabled, stores blocked comment submissions in the database.', 'zero-spam' ),
-				array( 'strong' => array() )
-			),
+			'desc'        => __( 'Keep a record of all blocked spam comments in the database.', 'zero-spam' ),
 			'options'     => array(
 				'enabled' => false,
 			),

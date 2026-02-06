@@ -5,6 +5,7 @@
  * Malicious user detection techniques available:
  *
  * 1. Zero Spam honeypot field
+ * 2. David Walsh technique
  *
  * @package ZeroSpam
  */
@@ -39,6 +40,11 @@ class Formidable {
 		) {
 			add_action( 'frm_entry_form', array( $this, 'honeypot' ), 10, 1 );
 			add_filter( 'frm_validate_entry', array( $this, 'preprocess_submission' ), 10, 2 );
+
+			// Load David Walsh scripts.
+			if ( 'enabled' === \ZeroSpam\Core\Settings::get_settings( 'davidwalsh' ) ) {
+				add_action( 'frm_enqueue_form_scripts', array( $this, 'add_scripts' ), 10 );
+			}
 		}
 	}
 
@@ -65,7 +71,7 @@ class Formidable {
 		$sections['formidable'] = array(
 			'title'    => __( 'Formidable', 'zero-spam' ),
 			'icon'     => 'modules/formidable/icon-formidable.png',
-			'supports' => array( 'honeypot' ),
+			'supports' => array( 'honeypot', 'davidwalsh' ),
 		);
 
 		return $sections;
@@ -81,7 +87,7 @@ class Formidable {
 
 		$settings['verify_formidable'] = array(
 			'title'       => __( 'Protect Formidable Submissions', 'zero-spam' ),
-			'desc'        => __( 'Protects & monitors Formidable submissions.', 'zero-spam' ),
+			'desc'        => __( 'Stop spam from Formidable Forms.', 'zero-spam' ),
 			'section'     => 'formidable',
 			'module'      => 'formidable',
 			'type'        => 'checkbox',
@@ -96,7 +102,7 @@ class Formidable {
 
 		$settings['formidable_spam_message'] = array(
 			'title'       => __( 'Flagged Message', 'zero-spam' ),
-			'desc'        => __( 'Message displayed when a submission has been flagged.', 'zero-spam' ),
+			'desc'        => __( 'The message shown when Formidable Forms detects spam.', 'zero-spam' ),
 			'section'     => 'formidable',
 			'module'      => 'formidable',
 			'type'        => 'text',
@@ -111,10 +117,7 @@ class Formidable {
 			'section'     => 'formidable',
 			'module'      => 'formidable',
 			'type'        => 'checkbox',
-			'desc'        => wp_kses(
-				__( 'When enabled, stores blocked Formidable submissions in the database.', 'zero-spam' ),
-				array( 'strong' => array() )
-			),
+			'desc'        => __( 'Keep a record of blocked Formidable Forms submissions.', 'zero-spam' ),
 			'options'     => array(
 				'enabled' => false,
 			),
@@ -133,6 +136,16 @@ class Formidable {
 	public function honeypot( $form_data ) {
 		// @codingStandardsIgnoreLine
 		echo \ZeroSpam\Core\Utilities::honeypot_field();
+	}
+
+	/**
+	 * Load the David Walsh scripts for Formidable Forms.
+	 *
+	 * @see https://formidableforms.com/knowledgebase/frm_enqueue_form_scripts/
+	 */
+	public function add_scripts() {
+		// Trigger the custom action to enqueue the David Walsh script.
+		do_action( 'zerospam_formidable_scripts' );
 	}
 
 	/**
@@ -164,6 +177,17 @@ class Formidable {
 			$details['failed'] = 'honeypot';
 
 			$validation_errors[] = 'honeypot';
+		}
+
+		// Fire hook for additional validation (ex. David Walsh).
+		if ( 'enabled' === \ZeroSpam\Core\Settings::get_settings( 'davidwalsh' ) ) {
+			$filtered_errors = apply_filters( 'zerospam_preprocess_formidable_submission', array(), $post, 'formidable_spam_message' );
+
+			if ( ! empty( $filtered_errors ) ) {
+				foreach ( $filtered_errors as $key => $message ) {
+					$validation_errors[] = str_replace( 'zerospam_', '', $key );
+				}
+			}
 		}
 
 		if ( ! empty( $validation_errors ) ) {
