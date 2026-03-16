@@ -47,6 +47,49 @@ class Settings {
 	}
 
 	/**
+	 * Validates that a setting definition contains all required keys.
+	 *
+	 * Settings registered via the `zerospam_settings` filter must include
+	 * `type` and `module` keys. Invalid settings are skipped to prevent
+	 * PHP 8.x "Undefined array key" warnings.
+	 *
+	 * @param string $key     Setting key.
+	 * @param mixed  $setting Setting definition array.
+	 * @return bool True if the setting is valid, false otherwise.
+	 */
+	public static function is_valid_setting( $key, $setting ) {
+		if ( ! is_array( $setting ) ) {
+			return false;
+		}
+
+		$required = array( 'type', 'module' );
+		$missing  = array();
+
+		foreach ( $required as $field ) {
+			if ( empty( $setting[ $field ] ) ) {
+				$missing[] = $field;
+			}
+		}
+
+		if ( $missing ) {
+			if ( defined( 'ZEROSPAM_DEBUG' ) && ZEROSPAM_DEBUG ) {
+				Utilities::log(
+					sprintf(
+						/* translators: 1: setting key, 2: comma-separated list of missing keys */
+						'Zero Spam: setting "%1$s" skipped — missing required key(s): %2$s.',
+						$key,
+						implode( ', ', $missing )
+					)
+				);
+			}
+
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Updates core disallowed words.
 	 */
 	public static function update_disallowed_words() {
@@ -148,6 +191,10 @@ class Settings {
 		$modules  = array();
 
 		foreach ( $settings as $key => $setting ) {
+			if ( ! self::is_valid_setting( $key, $setting ) ) {
+				continue;
+			}
+
 			if ( ! array_key_exists( $setting['module'], $modules ) ) {
 				$modules[ $setting['module'] ] = array(
 					$key => $setting,
@@ -219,14 +266,27 @@ class Settings {
 			$roles_array[ $role ] = $data['name'];
 		}
 
+		self::$settings['widget_enabled'] = array(
+			'title'       => __( 'Dashboard Widget', 'zero-spam' ),
+			'section'     => 'general',
+			'module'      => 'settings',
+			'type'        => 'checkbox',
+			'options'     => array(
+				'enabled' => __( 'Display the Zero Spam overview widget on the WordPress dashboard.', 'zero-spam' ),
+			),
+			'desc'        => __( 'Enable or disable the Zero Spam dashboard widget.', 'zero-spam' ),
+			'value'       => ! empty( $options['widget_enabled'] ) ? $options['widget_enabled'] : false,
+			'recommended' => 'enabled',
+		);
+
 		self::$settings['widget_visibility'] = array(
 			'title'       => __( 'Dashboard Widget Visibility', 'zero-spam' ),
 			'section'     => 'general',
 			'module'      => 'settings',
 			'type'        => 'select',
-			'desc'        => __( 'Choose which admin users can see the spam statistics on the dashboard.', 'zero-spam' ),
+			'desc'        => __( 'Choose which user roles can see the dashboard widget. Only applies when the widget is enabled.', 'zero-spam' ),
 			'options'     => $roles_array,
-			'value'       => ! empty( $options['widget_visibility'] ) ? $options['widget_visibility'] : false,
+			'value'       => isset( $options['widget_visibility'] ) ? $options['widget_visibility'] : false,
 			'recommended' => array( 'administrator' ),
 			'multiple'    => true,
 		);
@@ -367,6 +427,28 @@ class Settings {
 			'html'    => '', // Generated dynamically during render
 		);
 
+		self::$settings['allowed_words'] = array(
+			'title'       => __( 'Allowed Words', 'zero-spam' ),
+			'desc'        => __( 'Sometimes a word in the spam list accidentally matches part of your name, email, or website. Add those words here (one per line) so they won\'t be treated as spam. For example, if your email contains "ugg" and it keeps getting blocked, add "ugg" here to fix it.', 'zero-spam' ),
+			'section'     => 'general',
+			'module'      => 'settings',
+			'type'        => 'textarea',
+			'field_class' => 'regular-text code',
+			'placeholder' => '',
+			'value'       => ! empty( $options['allowed_words'] ) ? trim( $options['allowed_words'] ) : false,
+		);
+
+		self::$settings['disallowed_min_length'] = array(
+			'title'       => __( 'Minimum Disallowed Word Length', 'zero-spam' ),
+			'desc'        => __( 'Only check spam words that are at least this many characters long. Very short words (like 3-4 characters) can accidentally match normal text and cause false alarms. Set to 0 to check all words. We recommend 4 or 5 if you\'re seeing false positives.', 'zero-spam' ),
+			'section'     => 'general',
+			'module'      => 'settings',
+			'type'        => 'number',
+			'field_class' => 'small-text',
+			'placeholder' => 0,
+			'value'       => isset( $options['disallowed_min_length'] ) ? absint( $options['disallowed_min_length'] ) : 0,
+		);
+
 		self::$settings['update_disallowed_words'] = array(
 			'title'   => __( 'Override &amp; Update Core Disallowed Words', 'zero-spam' ),
 			'desc'    => __( 'Update WP core\'s disallowed words option with <a href="https://github.com/splorp/wordpress-comment-blacklist/" target="_blank" rel="noreferrer noopener">splorp\'s Comment Blacklist for WordPress</a>. <strong>WARNING:</strong> This will override any existing words.', 'zero-spam' ),
@@ -377,6 +459,14 @@ class Settings {
 		);
 
 		$settings = apply_filters( 'zerospam_settings', self::$settings );
+
+		// Ensure every setting has a section fallback.
+		foreach ( $settings as $setting_key => &$s ) {
+			if ( is_array( $s ) && empty( $s['section'] ) ) {
+				$s['section'] = 'general';
+			}
+		}
+		unset( $s );
 
 		if ( $key ) {
 			if ( ! empty( $settings[ $key ]['value'] ) ) {

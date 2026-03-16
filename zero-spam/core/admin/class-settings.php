@@ -228,6 +228,23 @@ class Settings {
 			exit;
 		}
 
+		// Dismiss settings review notice (shown after migration fix).
+		if ( 'dismiss-settings-review-notice' === $action && check_admin_referer( 'dismiss-settings-review-notice', 'zero-spam' ) ) {
+			delete_option( \ZeroSpam\Includes\Migrations::SETTINGS_REVIEW_NOTICE_OPTION );
+
+			$message      = __( 'Settings review notice dismissed.', 'zero-spam' );
+			$redirect_url = add_query_arg(
+				array(
+					'zerospam-msg'  => rawurlencode( $message ),
+					'zerospam-type' => 'success',
+				),
+				admin_url( $base_admin_link )
+			);
+
+			wp_safe_redirect( $redirect_url );
+			exit;
+		}
+
 		// Dismiss API monitoring notice.
 		if ( 'dismiss-api-monitoring-notice' === $action && check_admin_referer( 'dismiss-api-monitoring-notice', 'zero-spam' ) ) {
 			update_option( 'zerospam_api_monitoring_notice_dismissed', true );
@@ -342,13 +359,29 @@ class Settings {
 		$all_settings = \ZeroSpam\Core\Settings::get_settings();
 		
 		foreach ( $all_settings as $setting_key => $setting_config ) {
-			if ( 
-				isset( $setting_config['type'] ) && 
+			if (
+				isset( $setting_config['type'] ) &&
 				'checkbox' === $setting_config['type'] &&
 				isset( $setting_config['module'] ) &&
 				! isset( $input[ $setting_key ] )
 			) {
 				$input[ $setting_key ] = false;
+			}
+		}
+
+		// Handle empty multi-select fields.
+		// HTML multi-selects don't submit a value when nothing is selected,
+		// so explicitly store an empty array to distinguish "none selected"
+		// from "never configured".
+		foreach ( $all_settings as $setting_key => $setting_config ) {
+			if (
+				isset( $setting_config['type'] ) &&
+				'select' === $setting_config['type'] &&
+				! empty( $setting_config['multiple'] ) &&
+				isset( $setting_config['module'] ) &&
+				! isset( $input[ $setting_key ] )
+			) {
+				$input[ $setting_key ] = array();
 			}
 		}
 
@@ -416,6 +449,10 @@ class Settings {
 		}
 
 		foreach ( \ZeroSpam\Core\Settings::get_settings() as $key => $setting ) {
+			if ( ! \ZeroSpam\Core\Settings::is_valid_setting( $key, $setting ) ) {
+				continue;
+			}
+
 			$options = array_merge(
 				array(
 					'label_for' => $key,
@@ -449,6 +486,22 @@ class Settings {
 	 * @param array $args Field arguments.
 	 */
 	public function settings_field( $args ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'module'      => 'settings',
+				'label_for'   => '',
+				'type'        => 'text',
+				'desc'        => '',
+				'html'        => '',
+				'value'       => false,
+				'options'     => array(),
+				'field_class' => '',
+				'placeholder' => '',
+				'suffix'      => '',
+			)
+		);
+
 		$setting_name = 'zero-spam-' . $args['module'] . '[' . $args['label_for'] . ']';
 
 		$allowed_desc_html = array(
