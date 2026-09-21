@@ -19,6 +19,9 @@ $tables = array(
 	'stats_monthly' => 'wpzerospam_stats_monthly',
 );
 
+// User meta is shared across a network, so it only needs deleting once.
+delete_metadata( 'user', 0, 'zerospam_promo_dismissed', '', true );
+
 $modules = array(
 	'comments',
 	'contactform7',
@@ -59,6 +62,10 @@ if ( is_multisite() ) {
 			delete_option( 'zero-spam-last-update' );
 			delete_option( 'zerospam_completed_migrations' );
 			delete_option( 'zerospam_show_settings_review_notice' );
+			delete_option( 'zerospam_activation_time' );
+			delete_option( 'zerospam_api_monitoring_notice_dismissed' );
+			delete_option( 'zerospam_share_queue' );
+			wp_unschedule_hook( 'zerospam_async_share_detection' );
 
 		foreach ( $modules as $key => $module ) {
 				delete_option( "zero-spam-$module" );
@@ -97,6 +104,7 @@ if ( is_multisite() ) {
 	wp_clear_scheduled_hook( 'zerospam_api_usage_cleanup' );
 	wp_clear_scheduled_hook( 'zerospam_check_api_anomalies' );
 	wp_clear_scheduled_hook( 'zerospam_aggregate_api_data' );
+	wp_unschedule_hook( 'zerospam_async_share_detection' );
 } else {
 	delete_option( 'wpzerospam' );
 	delete_option( 'wpzerospam_honeypot' );
@@ -107,6 +115,9 @@ if ( is_multisite() ) {
 	delete_option( 'zero-spam-last-update' );
 	delete_option( 'zerospam_completed_migrations' );
 	delete_option( 'zerospam_show_settings_review_notice' );
+	delete_option( 'zerospam_activation_time' );
+	delete_option( 'zerospam_api_monitoring_notice_dismissed' );
+	delete_option( 'zerospam_share_queue' );
 
 	foreach ( $modules as $module => $settings ) {
 		delete_option( "zero-spam-$module" );
@@ -129,4 +140,5 @@ if ( is_multisite() ) {
 	wp_clear_scheduled_hook( 'zerospam_api_usage_cleanup' );
 	wp_clear_scheduled_hook( 'zerospam_check_api_anomalies' );
 	wp_clear_scheduled_hook( 'zerospam_aggregate_api_data' );
+	wp_unschedule_hook( 'zerospam_async_share_detection' );
 }
